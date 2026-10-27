@@ -37,6 +37,7 @@ function Navbar() {
                 Registrarse
               </Link>
             </li>
+            {/* Comentario Generico */}
           </ul>
         </nav>
       </div>
