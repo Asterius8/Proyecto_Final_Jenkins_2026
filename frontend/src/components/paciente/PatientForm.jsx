@@ -1,0 +1,296 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import Swal from "sweetalert2";
+
+import { sesionExpirada, cerrarSesion } from "../../utils/session";
+
+import "../../styles/form_paciente.css";
+
+function PatientForm() {
+  const navigate = useNavigate();
+
+  const [form, setForm] = useState({
+    nombre: "",
+    primer_apellido: "",
+    segundo_apellido: "",
+    fecha_nac: "",
+    sexo: "",
+    telefono: "",
+    tipo_seguro: "",
+    contacto_emergencia: "",
+    telefono_emergencia: "",
+  });
+
+  const validarSesion = () => {
+    if (sesionExpirada()) {
+      cerrarSesion();
+
+      Swal.fire(
+        "Sesión expirada",
+        "Vuelve a iniciar sesión",
+        "warning"
+      ).then(() => {
+        navigate("/login");
+      });
+
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleChange = (e) => {
+    setForm({
+      ...form,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  const validar = () => {
+    let errores = [];
+
+    if (!form.nombre.match(/^[A-Za-zÁÉÍÓÚáéíóúÑñ ]+$/)) {
+      errores.push("Nombre inválido");
+    }
+
+    if (!form.primer_apellido) {
+      errores.push("Apellido obligatorio");
+    }
+
+    if (!form.fecha_nac) {
+      errores.push("Fecha obligatoria");
+    }
+
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+
+    const fechaNacimiento = new Date(form.fecha_nac);
+
+    if (fechaNacimiento >= hoy) {
+      errores.push("La fecha de nacimiento debe ser anterior al día de hoy");
+    }
+
+    if (!form.sexo) {
+      errores.push("Selecciona sexo");
+    }
+
+    if (!form.telefono.match(/^[0-9]{10}$/)) {
+      errores.push("Teléfono inválido");
+    }
+
+    if (!form.tipo_seguro) {
+      errores.push("Selecciona seguro");
+    }
+
+    if (!form.contacto_emergencia) {
+      errores.push("Contacto obligatorio");
+    }
+
+    if (!form.telefono_emergencia.match(/^[0-9]{10}$/)) {
+      errores.push("Teléfono emergencia inválido");
+    }
+
+    return errores;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    const errores = validar();
+
+    if (errores.length > 0) {
+      Swal.fire({
+        title: "Errores",
+        html: `<ul style="text-align:left;">${errores.map((e) => `<li>${e}</li>`).join("")}</ul>`,
+        icon: "error",
+      });
+
+      return;
+    }
+
+    if (!validarSesion()) return;
+
+    const email = localStorage.getItem("email");
+
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/paciente`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ ...form, email }),
+      });
+
+      const data = await res.json();
+
+      if (data.ok) {
+        Swal.fire({
+          title: "Paciente creado",
+          text: "Datos guardados correctamente",
+          icon: "success",
+        }).then(() => {
+          navigate("/paciente/dashboard");
+        });
+      } else {
+        Swal.fire({
+          title: "Error",
+          html: `<ul>${data.errores.map((e) => `<li>${e}</li>`).join("")}</ul>`,
+          icon: "error",
+        });
+      }
+    } catch (error) {
+      console.error(error);
+      Swal.fire("Error", error.message, "error");
+    }
+  };
+
+  return (
+    <div className="paciente-page">
+      <div className="container2">
+        <form className="form-card2" onSubmit={handleSubmit}>
+          <h2>Datos Personales</h2>
+          <p className="subtitle">Completa tu información personal</p>
+
+          <input
+            name="nombre"
+            placeholder="Nombre"
+            value={form.nombre}
+            onChange={(e) =>
+              setForm({
+                ...form,
+                nombre: e.target.value.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñ ]/g, "")
+              })
+            }
+          />
+
+          <input
+            name="primer_apellido"
+            placeholder="Primer Apellido"
+            value={form.primer_apellido}
+            onChange={(e) =>
+              setForm({
+                ...form,
+                primer_apellido: e.target.value.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñ ]/g, "")
+              })
+            }
+          />
+
+          <input
+            name="segundo_apellido"
+            placeholder="Segundo Apellido"
+            value={form.segundo_apellido}
+            onChange={(e) =>
+              setForm({
+                ...form,
+                segundo_apellido: e.target.value.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñ ]/g, "")
+              })
+            }
+          />
+
+          <input
+            type="date"
+            name="fecha_nac"
+            max={new Date(Date.now() - 86400000).toISOString().split("T")[0]}
+            onChange={handleChange}
+          />
+
+          <div className="form-group">
+            <label>Sexo</label>
+
+            <div className="radio-group">
+              <div className="radio-option">
+                <input
+                  type="radio"
+                  id="sexo-m"
+                  name="sexo"
+                  value="M"
+                  onChange={handleChange}
+                />
+                <label htmlFor="sexo-m">Masculino</label>
+              </div>
+
+              <div className="radio-option">
+                <input
+                  type="radio"
+                  id="sexo-f"
+                  name="sexo"
+                  value="F"
+                  onChange={handleChange}
+                />
+                <label htmlFor="sexo-f">Femenino</label>
+              </div>
+
+              <div className="radio-option">
+                <input
+                  type="radio"
+                  id="sexo-o"
+                  name="sexo"
+                  value="O"
+                  onChange={handleChange}
+                />
+                <label htmlFor="sexo-o">Otros</label>
+              </div>
+            </div>
+          </div>
+
+          <input
+            name="telefono"
+            placeholder="Teléfono"
+            maxLength={10}
+            value={form.telefono}
+            onChange={(e) =>
+              setForm({
+                ...form,
+                telefono: e.target.value.replace(/\D/g, "").slice(0, 10),
+              })
+            }
+          />
+
+          <select name="tipo_seguro" onChange={handleChange}>
+            <option value="">Selecciona tipo de seguro</option>
+            <option value="Privado">Privado</option>
+            <option value="Aseguradora">Aseguradora</option>
+            <option value="Gobierno">Gobierno</option>
+            <option value="Indigente">Indigente</option>
+            <option value="Ninguno">Ninguno</option>
+          </select>
+
+          <div className="emergency-card">
+            <h3>Contacto de emergencia</h3>
+
+            <input
+              name="contacto_emergencia"
+              placeholder="Nombre contacto"
+              value={form.contacto_emergencia}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  contacto_emergencia: e.target.value.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñ ]/g, "")
+                })
+              }
+            />
+
+            <input
+              name="telefono_emergencia"
+              placeholder="Teléfono contacto"
+              maxLength={10}
+              value={form.telefono_emergencia}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  telefono_emergencia: e.target.value.replace(/\D/g, "").slice(0, 10),
+                })
+              }
+            />
+          </div>
+
+          <button className="register-btn-primary">
+            Guardar Datos
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+export default PatientForm;
