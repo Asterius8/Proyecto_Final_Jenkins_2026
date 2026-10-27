@@ -37,7 +37,6 @@ function Navbar() {
                 Registrarse
               </Link>
             </li>
-            
           </ul>
         </nav>
       </div>
