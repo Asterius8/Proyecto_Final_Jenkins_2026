@@ -38,6 +38,7 @@ function Navbar() {
               </Link>
             </li>
             {/* Comentario Generico */}
+            {/* Comentario Generico 2 */}
           </ul>
         </nav>
       </div>
